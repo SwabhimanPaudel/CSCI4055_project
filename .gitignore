@@ -1,0 +1,10 @@
+# Compiled Java files
+*.class
+
+# macOS metadata
+.DS_Store
+
+# Local environment settings (may contain database credentials)
+.env
+.env.*
+!.env.example
