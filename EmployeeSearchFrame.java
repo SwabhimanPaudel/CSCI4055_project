@@ -5,6 +5,11 @@
  */
 
 import java.awt.EventQueue;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import javax.swing.JOptionPane;
 
 import javax.swing.JFrame;
 import javax.swing.JPanel;
@@ -76,17 +81,67 @@ public class EmployeeSearchFrame extends JFrame {
 		 * departments and projects from your entered database name.
 		 */
 		btnDBFill.addActionListener(new ActionListener() {
-			public void actionPerformed(ActionEvent e) {
-				String[] dept = {"Headquarters", "Reorganization"};	
-				for(int i = 0; i < dept.length; i++) {
-					department.addElement(dept[i]);
-				}
-				String[] prj = {"ProdoctX", "ProductY", "ProductZ"};
-				for(int j = 0; j < prj.length; j++) {
-					project.addElement(prj[j]);
-				}
-				
-			}
+		    public void actionPerformed(ActionEvent e) {
+
+		        // Clear previous entries
+		        department.clear();
+		        project.clear();
+
+		        // Read the database name entered by the user
+		        String databaseName = txtDatabase.getText().trim();
+
+		        // Check the database name
+		        if (!databaseName.equalsIgnoreCase("COMPANY")) {
+		            JOptionPane.showMessageDialog(
+		                EmployeeSearchFrame.this,
+		                "Please enter the database name COMPANY.",
+		                "Invalid Database",
+		                JOptionPane.ERROR_MESSAGE
+		            );
+		            return;
+		        }
+
+		        try (Connection connection = DatabaseConnection.getConnection()) {
+
+		            // Load departments
+		            String deptSQL = "SELECT Dname FROM DEPARTMENT ORDER BY Dnumber";
+
+		            try (PreparedStatement deptStatement =
+		                    connection.prepareStatement(deptSQL);
+		                 ResultSet deptResults = deptStatement.executeQuery()) {
+
+		                while (deptResults.next()) {
+		                    department.addElement(deptResults.getString("Dname"));
+		                }
+		            }
+
+		            // Load projects
+		            String projectSQL = "SELECT Pname FROM PROJECT ORDER BY Pnumber";
+
+		            try (PreparedStatement projectStatement =
+		                    connection.prepareStatement(projectSQL);
+		                 ResultSet projectResults = projectStatement.executeQuery()) {
+
+		                while (projectResults.next()) {
+		                    project.addElement(projectResults.getString("Pname"));
+		                }
+		            }
+
+		            JOptionPane.showMessageDialog(
+		                EmployeeSearchFrame.this,
+		                "Departments and projects loaded successfully!"
+		            );
+
+		        } catch (SQLException ex) {
+		            JOptionPane.showMessageDialog(
+		                EmployeeSearchFrame.this,
+		                "Could not load departments and projects:\n" + ex.getMessage(),
+		                "Database Error",
+		                JOptionPane.ERROR_MESSAGE
+		            );
+		            ex.printStackTrace();
+		        }
+		    }
 		});
 		
 		btnDBFill.setFont(new Font("Times New Roman", Font.BOLD, 12));
