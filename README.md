@@ -28,9 +28,15 @@ first driver download. The database itself is not included in the repository.
 ## Database settings
 
 The defaults are `localhost`, port `3306`, user `root`, and an empty password.
-If your XAMPP settings are different, copy `database.properties.example` to
-`database.properties` and edit the values. The local file is ignored by Git.
-Environment variables with the same names override the file.
+Use **Settings** in the app to enter your XAMPP port, username, and password.
+The same dialog opens if the server cannot be reached or the login is rejected.
+After changing Settings, click Fill. A failed Fill retries automatically when
+you correct its connection dialog. Passwords entered in the dialog are kept only
+for the current window and are not saved to a file.
+
+For saved launch defaults, optionally copy `database.properties.example` to
+`database.properties`. The local file is ignored by Git. Environment variables
+with the same names override the file; Settings can change them for the session.
 
 ```properties
 DB_HOST=localhost

@@ -4,7 +4,9 @@
  *    are to be built by you and your group.
  */
 
+import java.awt.BorderLayout;
 import java.awt.EventQueue;
+import java.awt.GridLayout;
 import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -12,6 +14,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 import javax.swing.JFrame;
 import javax.swing.JPanel;
@@ -29,6 +32,7 @@ import java.awt.event.ActionEvent;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
 import javax.swing.JOptionPane;
+import javax.swing.JPasswordField;
 
 public class EmployeeSearchFrame extends JFrame {
 
@@ -43,6 +47,7 @@ public class EmployeeSearchFrame extends JFrame {
 	private JCheckBox chckbxNotDept;
 	private JCheckBox chckbxNotProject;
 	private Connection searchConnection;
+	private Properties connectionSettings;
 
 	/** Use the connection opened by Fill for later searches. */
 	public void setSearchConnection(Connection connection) {
@@ -72,6 +77,7 @@ public class EmployeeSearchFrame extends JFrame {
 		} catch (SQLException error) {
 			System.err.println("Could not close the database connection.");
 		} finally {
+			connectionSettings = null;
 			super.dispose();
 		}
 	}
@@ -90,11 +96,94 @@ public class EmployeeSearchFrame extends JFrame {
 		return names;
 	}
 
+	private Properties currentSettings() throws SQLException {
+		if (connectionSettings == null) {
+			connectionSettings = DatabaseConnection.getSettings();
+		}
+		return connectionSettings;
+	}
+
+	private Properties askConnectionSettings(String message) throws SQLException {
+		Properties previous = currentSettings();
+		JTextField host = new JTextField(previous.getProperty("DB_HOST"), 16);
+		JTextField port = new JTextField(previous.getProperty("DB_PORT"), 6);
+		JTextField user = new JTextField(previous.getProperty("DB_USER"), 16);
+		JPasswordField password = new JPasswordField(previous.getProperty("DB_PASSWORD"), 16);
+		JPanel fields = new JPanel(new GridLayout(0, 2, 8, 6));
+		String[] labels = {"Host", "Port", "Username", "Password"};
+		JTextField[] inputs = {host, port, user, password};
+		for (int i = 0; i < labels.length; i++) {
+			JLabel label = new JLabel(labels[i]);
+			label.setLabelFor(inputs[i]);
+			fields.add(label);
+			fields.add(inputs[i]);
+		}
+		JLabel explanation = new JLabel(message);
+		JPanel panel = new JPanel(new BorderLayout(0, 12));
+		panel.add(explanation, BorderLayout.NORTH);
+		panel.add(fields, BorderLayout.CENTER);
+		while (true) {
+			EventQueue.invokeLater(() -> password.requestFocusInWindow());
+			int choice = JOptionPane.showConfirmDialog(this, panel, "Database Connection",
+					JOptionPane.OK_CANCEL_OPTION, JOptionPane.PLAIN_MESSAGE);
+			if (choice != JOptionPane.OK_OPTION) {
+				password.setText("");
+				return null;
+			}
+			try {
+				int number = Integer.parseInt(port.getText().trim());
+				if (number < 1 || number > 65535) {
+					throw new NumberFormatException();
+				}
+			} catch (NumberFormatException error) {
+				explanation.setText("Enter a port number between 1 and 65535.");
+				continue;
+			}
+			if (host.getText().trim().isEmpty() || user.getText().trim().isEmpty()) {
+				explanation.setText("Enter the database host and username.");
+				continue;
+			}
+			Properties updated = new Properties();
+			updated.putAll(previous);
+			updated.setProperty("DB_HOST", host.getText().trim());
+			updated.setProperty("DB_PORT", port.getText().trim());
+			updated.setProperty("DB_USER", user.getText().trim());
+			char[] enteredPassword = password.getPassword();
+			updated.setProperty("DB_PASSWORD", new String(enteredPassword));
+			java.util.Arrays.fill(enteredPassword, '\0');
+			password.setText("");
+			return updated;
+		}
+	}
+
+	private void configureConnection() {
+		try {
+			Properties updated = askConnectionSettings("Enter your XAMPP server, port, and login.");
+			if (updated == null) {
+				return;
+			}
+			closeDatabase();
+			clearResults();
+			department.clear();
+			project.clear();
+			connectionSettings = updated;
+		} catch (SQLException error) {
+			JOptionPane.showMessageDialog(this,
+					"Could not change the database connection:\n" + error.getMessage(),
+					"Database Error", JOptionPane.ERROR_MESSAGE);
+		}
+	}
+
+	private boolean needsConnectionSettings(SQLException error) {
+		String state = error.getSQLState();
+		return (state != null && (state.startsWith("08") || state.equals("28000")))
+				|| error.getErrorCode() == 1045 || error.getErrorCode() == 1044;
+	}
+
 	private void fillDatabase() {
 		clearResults();
 		department.clear();
 		project.clear();
-		Connection pending = null;
 		try {
 			closeDatabase();
 			String databaseName = txtDatabase.getText().trim();
@@ -103,33 +192,49 @@ public class EmployeeSearchFrame extends JFrame {
 						"Missing Database", JOptionPane.ERROR_MESSAGE);
 				return;
 			}
-			pending = DatabaseConnection.getConnection(databaseName);
-			Map<String, String> tables = DatabaseConnection.companyTables(pending);
-			List<String> departments = loadNames(pending,
-					"SELECT Dname FROM " + tables.get("DEPARTMENT") + " ORDER BY Dnumber", "Dname");
-			List<String> projects = loadNames(pending,
-					"SELECT Pname FROM " + tables.get("PROJECT") + " ORDER BY Pnumber", "Pname");
-			for (String name : departments) {
-				department.addElement(name);
+			while (true) {
+				Connection pending = null;
+				try {
+					pending = DatabaseConnection.getConnection(databaseName, currentSettings());
+					Map<String, String> tables = DatabaseConnection.companyTables(pending);
+					List<String> departments = loadNames(pending,
+							"SELECT Dname FROM " + tables.get("DEPARTMENT") + " ORDER BY Dnumber", "Dname");
+					List<String> projects = loadNames(pending,
+							"SELECT Pname FROM " + tables.get("PROJECT") + " ORDER BY Pnumber", "Pname");
+					for (String name : departments) {
+						department.addElement(name);
+					}
+					for (String name : projects) {
+						project.addElement(name);
+					}
+					setSearchConnection(pending);
+					pending = null; // Search reuses this connection.
+					JOptionPane.showMessageDialog(this, "Departments and projects loaded successfully!");
+					return;
+				} catch (SQLException error) {
+					if (!needsConnectionSettings(error)) {
+						throw error;
+					}
+					Properties updated = askConnectionSettings(
+							"Database could not be opened. Check your XAMPP port and login.");
+					if (updated == null) {
+						return;
+					}
+					connectionSettings = updated;
+				} finally {
+					if (pending != null) {
+						try {
+							pending.close();
+						} catch (SQLException error) {
+							System.err.println("Could not close the failed database connection.");
+						}
+					}
+				}
 			}
-			for (String name : projects) {
-				project.addElement(name);
-			}
-			setSearchConnection(pending);
-			pending = null; // Search reuses this connection.
-			JOptionPane.showMessageDialog(this, "Departments and projects loaded successfully!");
 		} catch (SQLException error) {
 			JOptionPane.showMessageDialog(this,
 					"Database could not be opened:\n" + error.getMessage(),
 					"Database Error", JOptionPane.ERROR_MESSAGE);
-		} finally {
-			if (pending != null) {
-				try {
-					pending.close();
-				} catch (SQLException error) {
-					System.err.println("Could not close the failed database connection.");
-				}
-			}
 		}
 	}
 
@@ -189,10 +294,16 @@ public class EmployeeSearchFrame extends JFrame {
 		contentPane.add(lblNewLabel);
 		
 		txtDatabase = new JTextField();
-		txtDatabase.setBounds(90, 20, 193, 20);
+		txtDatabase.setBounds(90, 20, 155, 20);
 		contentPane.add(txtDatabase);
 		txtDatabase.setColumns(10);
 		lblNewLabel.setLabelFor(txtDatabase);
+
+		JButton btnSettings = new JButton("Settings");
+		btnSettings.setFont(new Font("Times New Roman", Font.BOLD, 12));
+		btnSettings.setBounds(255, 19, 85, 23);
+		btnSettings.addActionListener(e -> configureConnection());
+		contentPane.add(btnSettings);
 		
 		JButton btnDBFill = new JButton("Fill");
 		btnDBFill.addActionListener(new ActionListener() {
@@ -202,7 +313,7 @@ public class EmployeeSearchFrame extends JFrame {
 		});
 		
 		btnDBFill.setFont(new Font("Times New Roman", Font.BOLD, 12));
-		btnDBFill.setBounds(307, 19, 68, 23);
+		btnDBFill.setBounds(350, 19, 68, 23);
 		contentPane.add(btnDBFill);
 		
 		JLabel lblDepartment = new JLabel("Department");
