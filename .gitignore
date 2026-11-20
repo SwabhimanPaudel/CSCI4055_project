@@ -2,7 +2,11 @@
 *.class
 
 # Downloaded JDBC driver
-lib/*.jar
+lib/
+
+# Build output and private database settings
+build/
+database.properties
 
 # macOS metadata
 .DS_Store

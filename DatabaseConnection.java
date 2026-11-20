@@ -1,3 +1,9 @@
+import java.io.IOException;
+import java.io.Reader;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
@@ -23,7 +29,8 @@ public final class DatabaseConnection {
             throw new SQLException("Use letters, numbers, and underscores for the database name.");
         }
 
-        String port = setting("DB_PORT", "3307");
+        Properties local = readSettings();
+        String port = setting(local, "DB_PORT", "3306");
         try {
             int number = Integer.parseInt(port);
             if (number < 1 || number > 65535) {
@@ -32,26 +39,39 @@ public final class DatabaseConnection {
         } catch (NumberFormatException error) {
             throw new SQLException("DB_PORT must be a number between 1 and 65535.");
         }
-        String url = "jdbc:mariadb://" + setting("DB_HOST", "localhost")
+        String url = "jdbc:mariadb://" + setting(local, "DB_HOST", "localhost")
                 + ":" + port + "/" + databaseName;
         Properties settings = new Properties();
-        settings.setProperty("user", setting("DB_USER", "root"));
-        settings.setProperty("password", setting("DB_PASSWORD", ""));
+        settings.setProperty("user", setting(local, "DB_USER", "root"));
+        settings.setProperty("password", setting(local, "DB_PASSWORD", ""));
         settings.setProperty("connectTimeout", "5000");
         settings.setProperty("socketTimeout", "15000");
-        String sslMode = System.getenv("DB_SSL_MODE");
-        if (sslMode != null && !sslMode.isEmpty()) {
+        String sslMode = setting(local, "DB_SSL_MODE", "");
+        if (!sslMode.isEmpty()) {
             settings.setProperty("sslMode", sslMode);
         }
         return DriverManager.getConnection(url, settings);
     }
 
-    private static String setting(String name, String fallback) {
-        String value = System.getenv(name);
-        return value == null ? fallback : value;
+    private static Properties readSettings() throws SQLException {
+        Properties local = new Properties();
+        Path file = Paths.get("database.properties");
+        if (Files.exists(file)) {
+            try (Reader reader = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
+                local.load(reader);
+            } catch (IOException | IllegalArgumentException error) {
+                throw new SQLException("Could not read database.properties.", error);
+            }
+        }
+        return local;
     }
 
-    /** Verify the columns used by this app and return the actual, quoted table names. */
+    private static String setting(Properties local, String name, String fallback) {
+        String value = System.getenv(name);
+        return value == null ? local.getProperty(name, fallback) : value;
+    }
+
+    /** Check the COMPANY schema and handle differences in table capitalization. */
     public static Map<String, String> companyTables(Connection connection) throws SQLException {
         String[][] required = {
             {"DEPARTMENT", "Dnumber", "Dname"},

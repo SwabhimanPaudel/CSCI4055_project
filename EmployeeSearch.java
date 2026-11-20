@@ -14,11 +14,7 @@ public final class EmployeeSearch {
     private EmployeeSearch() {
     }
 
-    /**
-     * Matches any selected name within each filter and combines active filters
-     * with AND. An empty selection disables that filter, including its Not flag.
-     * The caller owns the connection; this method closes only its own resources.
-     */
+    /** Apply both active filters and leave the database connection open. */
     public static List<String> search(Connection connection,
             List<String> departments, boolean notDepartments,
             List<String> projects, boolean notProjects) throws SQLException {
@@ -41,8 +37,7 @@ public final class EmployeeSearch {
         }
 
         if (!projects.isEmpty()) {
-            // Correlate the whole set of assignments with the employee. Testing
-            // individual nonmatching WORKS_ON rows would make Project Not wrong.
+            // Project Not excludes anyone assigned to any selected project.
             sql.append(notProjects ? " AND NOT EXISTS (" : " AND EXISTS (");
             sql.append("SELECT 1 FROM ").append(tables.get("WORKS_ON")).append(" w")
                     .append(" JOIN ").append(tables.get("PROJECT"))

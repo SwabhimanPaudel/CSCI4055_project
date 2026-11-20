@@ -44,10 +44,7 @@ public class EmployeeSearchFrame extends JFrame {
 	private JCheckBox chckbxNotProject;
 	private Connection searchConnection;
 
-	/**
-	 * Fill calls this after successfully opening the database and loading both
-	 * lists. Pass null before replacing or closing that connection. Fill owns it.
-	 */
+	/** Use the connection opened by Fill for later searches. */
 	public void setSearchConnection(Connection connection) {
 		searchConnection = connection;
 	}
@@ -119,7 +116,7 @@ public class EmployeeSearchFrame extends JFrame {
 				project.addElement(name);
 			}
 			setSearchConnection(pending);
-			pending = null; // The frame now owns this connection until refill/close.
+			pending = null; // Search reuses this connection.
 			JOptionPane.showMessageDialog(this, "Departments and projects loaded successfully!");
 		} catch (SQLException error) {
 			JOptionPane.showMessageDialog(this,
@@ -198,10 +195,6 @@ public class EmployeeSearchFrame extends JFrame {
 		lblNewLabel.setLabelFor(txtDatabase);
 		
 		JButton btnDBFill = new JButton("Fill");
-		/**
-		 * The btnDBFill should fill the department and project JList with the 
-		 * departments and projects from your entered database name.
-		 */
 		btnDBFill.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
 				fillDatabase();
