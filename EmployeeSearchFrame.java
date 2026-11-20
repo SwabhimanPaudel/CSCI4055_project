@@ -15,6 +15,7 @@ import javax.swing.border.EmptyBorder;
 import javax.swing.JLabel;
 import java.awt.Font;
 import javax.swing.JTextField;
+import javax.swing.ListSelectionModel;
 import javax.swing.DefaultListModel;
 import javax.swing.JButton;
 import javax.swing.JList;
@@ -112,7 +113,7 @@ public class EmployeeSearchFrame extends JFrame {
 		 */
 		btnDBFill.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				String[] dept = {"Headquarters", "Reorganization"};	
+				String[] dept = {"Headquarters", "Reorganization", "Accounting", "HR"};
 				for(int i = 0; i < dept.length; i++) {
 					department.addElement(dept[i]);
 				}
@@ -143,6 +144,15 @@ public class EmployeeSearchFrame extends JFrame {
 		lstProject.setModel(project);
 		lstProject.setBounds(225, 84, 150, 42);
 		contentPane.add(lstProject);
+
+		//Select multiple projects
+		lstProject.setSelectionMode(
+			ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+
+		//Make Project scrollable
+		JScrollPane scrollProject = new JScrollPane(lstProject);
+		scrollProject.setBounds(225, 84, 150, 42);
+		contentPane.add(scrollProject);
 		
 		JCheckBox chckbxNotDept = new JCheckBox("Not");
 		chckbxNotDept.setBounds(71, 133, 59, 23);
@@ -158,6 +168,15 @@ public class EmployeeSearchFrame extends JFrame {
 		lstDepartment.setFont(new Font("Tahoma", Font.PLAIN, 12));
 		lstDepartment.setModel(department);
 		
+		//Select multiple departments
+		lstDepartment.setSelectionMode(
+			ListSelectionModel.MULTIPLE_INTERVAL_SELECTION);
+
+		//Make Department scrollable
+		JScrollPane scrollDepartment = new JScrollPane(lstDepartment);
+		scrollDepartment.setBounds(36, 84, 172, 40);
+		contentPane.add(scrollDepartment);
+
 		JLabel lblEmployee = new JLabel("Employee");
 		lblEmployee.setFont(new Font("Times New Roman", Font.BOLD, 12));
 		lblEmployee.setBounds(52, 179, 89, 14);
@@ -175,7 +194,15 @@ public class EmployeeSearchFrame extends JFrame {
 		JButton btnClear = new JButton("Clear");
 		btnClear.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
+				 // Clear employee results
 				textAreaEmployee.setText("");
+				// Clear Department selection
+				lstDepartment.clearSelection();
+				// Clear Project selection
+				lstProject.clearSelection();
+				// Turn off Not checkboxes
+				chckbxNotDept.setSelected(false);
+				chckbxNotProject.setSelected(false);
 			}
 		});
 		btnClear.setBounds(236, 276, 89, 23);
@@ -184,5 +211,10 @@ public class EmployeeSearchFrame extends JFrame {
 		textAreaEmployee = new JTextArea();
 		textAreaEmployee.setBounds(36, 197, 339, 68);
 		contentPane.add(textAreaEmployee);
+
+		//Make Employee scrollable
+		JScrollPane scrollEmployee = new JScrollPane(textAreaEmployee);
+		scrollEmployee.setBounds(36, 197, 339, 68);
+		contentPane.add(scrollEmployee);
 	}
 }
