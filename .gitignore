@@ -1,6 +1,9 @@
 # Compiled Java files
 *.class
 
+# Downloaded JDBC driver
+lib/*.jar
+
 # macOS metadata
 .DS_Store
 

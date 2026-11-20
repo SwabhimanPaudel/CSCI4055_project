@@ -5,6 +5,9 @@
  */
 
 import java.awt.EventQueue;
+import java.sql.Connection;
+import java.sql.SQLException;
+import java.util.List;
 
 import javax.swing.JFrame;
 import javax.swing.JPanel;
@@ -20,6 +23,7 @@ import java.awt.event.ActionListener;
 import java.awt.event.ActionEvent;
 import javax.swing.JScrollPane;
 import javax.swing.JTextArea;
+import javax.swing.JOptionPane;
 
 public class EmployeeSearchFrame extends JFrame {
 
@@ -31,6 +35,37 @@ public class EmployeeSearchFrame extends JFrame {
 	private JList<String> lstProject;
 	private DefaultListModel<String> project = new DefaultListModel<String>();
 	private JTextArea textAreaEmployee;
+	private Connection searchConnection;
+
+	/**
+	 * Fill calls this after successfully opening the database and loading both
+	 * lists. Pass null before replacing or closing that connection. Fill owns it.
+	 */
+	public void setSearchConnection(Connection connection) {
+		searchConnection = connection;
+	}
+
+	private void searchEmployees(boolean notDepartments, boolean notProjects) {
+		textAreaEmployee.setText("");
+		try {
+			if (searchConnection == null || searchConnection.isClosed()) {
+				JOptionPane.showMessageDialog(this,
+						"Open a database with Fill before searching.",
+						"Database Required", JOptionPane.WARNING_MESSAGE);
+				return;
+			}
+			List<String> employees = EmployeeSearch.search(searchConnection,
+					lstDepartment.getSelectedValuesList(), notDepartments,
+					lstProject.getSelectedValuesList(), notProjects);
+			textAreaEmployee.setText(employees.isEmpty()
+					? "No employees found." : String.join("\n", employees));
+			textAreaEmployee.setCaretPosition(0);
+		} catch (SQLException error) {
+			JOptionPane.showMessageDialog(this,
+					"Employee search failed:\n" + error.getMessage(),
+					"Search Error", JOptionPane.ERROR_MESSAGE);
+		}
+	}
 	/**
 	 * Launch the application.
 	 */
@@ -131,7 +166,7 @@ public class EmployeeSearchFrame extends JFrame {
 		JButton btnSearch = new JButton("Search");
 		btnSearch.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				textAreaEmployee.setText("John Smith\nFranklin Wong");
+				searchEmployees(chckbxNotDept.isSelected(), chckbxNotProject.isSelected());
 			}
 		});
 		btnSearch.setBounds(80, 276, 89, 23);
