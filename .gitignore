@@ -1,11 +1,13 @@
 # Compiled Java files
 *.class
 
-# Downloaded JDBC driver
-lib/
+# JDBC drivers: only the MariaDB driver used by the app is committed
+lib/*
+!lib/mariadb-java-client-3.5.11.jar
 
 # Build output and private database settings
 build/
+bin/
 database.properties
 
 # macOS metadata

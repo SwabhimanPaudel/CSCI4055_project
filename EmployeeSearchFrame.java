@@ -1,7 +1,10 @@
 /**
- * Author: Lon Smith, Ph.D.
- * Description: This is the framework for the database program. Additional requirements and functionality
- *    are to be built by you and your group.
+ * Starter framework author: Lon Smith, Ph.D.
+ * Group members: Swabhiman Paudel, Yukta Karki, Kierra Wines
+ * Course: CSCI 4055 Database Project
+ * Description: Swing window that loads departments and projects from a COMPANY-schema
+ *    database and searches for employees in, or not in, the selected departments/projects.
+ *    Layout started from the WindowBuilder template; the Settings button is our addition.
  */
 
 import java.awt.BorderLayout;
@@ -281,7 +284,9 @@ public class EmployeeSearchFrame extends JFrame {
 	public EmployeeSearchFrame() {
 		setTitle("Employee Search");
 		setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
-		setBounds(100, 100, 450, 347);
+		setBounds(100, 100, 580, 450);
+		setResizable(false); // Absolute WindowBuilder layout does not stretch.
+		setLocationRelativeTo(null);
 		contentPane = new JPanel();
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
 		
@@ -290,18 +295,18 @@ public class EmployeeSearchFrame extends JFrame {
 		
 		JLabel lblNewLabel = new JLabel("Database:");
 		lblNewLabel.setFont(new Font("Times New Roman", Font.BOLD, 12));
-		lblNewLabel.setBounds(21, 23, 59, 14);
+		lblNewLabel.setBounds(25, 23, 70, 14);
 		contentPane.add(lblNewLabel);
 		
 		txtDatabase = new JTextField();
-		txtDatabase.setBounds(90, 20, 155, 20);
+		txtDatabase.setBounds(95, 20, 225, 22);
 		contentPane.add(txtDatabase);
 		txtDatabase.setColumns(10);
 		lblNewLabel.setLabelFor(txtDatabase);
 
 		JButton btnSettings = new JButton("Settings");
 		btnSettings.setFont(new Font("Times New Roman", Font.BOLD, 12));
-		btnSettings.setBounds(255, 19, 85, 23);
+		btnSettings.setBounds(330, 19, 95, 24);
 		btnSettings.addActionListener(e -> configureConnection());
 		contentPane.add(btnSettings);
 		
@@ -313,17 +318,17 @@ public class EmployeeSearchFrame extends JFrame {
 		});
 		
 		btnDBFill.setFont(new Font("Times New Roman", Font.BOLD, 12));
-		btnDBFill.setBounds(350, 19, 68, 23);
+		btnDBFill.setBounds(435, 19, 95, 24);
 		contentPane.add(btnDBFill);
 		
 		JLabel lblDepartment = new JLabel("Department");
 		lblDepartment.setFont(new Font("Times New Roman", Font.BOLD, 12));
-		lblDepartment.setBounds(52, 63, 89, 14);
+		lblDepartment.setBounds(50, 60, 120, 14);
 		contentPane.add(lblDepartment);
 		
 		JLabel lblProject = new JLabel("Project");
 		lblProject.setFont(new Font("Times New Roman", Font.BOLD, 12));
-		lblProject.setBounds(255, 63, 47, 14);
+		lblProject.setBounds(310, 60, 120, 14);
 		contentPane.add(lblProject);
 		
 		lstProject = new JList<String>(new DefaultListModel<String>());
@@ -337,17 +342,17 @@ public class EmployeeSearchFrame extends JFrame {
 
 		//Make Project scrollable
 		JScrollPane scrollProject = new JScrollPane(lstProject);
-		scrollProject.setBounds(225, 84, 150, 42);
+		scrollProject.setBounds(300, 78, 230, 90);
 		contentPane.add(scrollProject);
 		
 		chckbxNotDept = new JCheckBox("Not");
 		chckbxNotDept.getAccessibleContext().setAccessibleName("Not in selected departments");
-		chckbxNotDept.setBounds(71, 133, 59, 23);
+		chckbxNotDept.setBounds(120, 175, 70, 23);
 		contentPane.add(chckbxNotDept);
 		
 		chckbxNotProject = new JCheckBox("Not");
 		chckbxNotProject.getAccessibleContext().setAccessibleName("Not on selected projects");
-		chckbxNotProject.setBounds(270, 133, 59, 23);
+		chckbxNotProject.setBounds(380, 175, 70, 23);
 		contentPane.add(chckbxNotProject);
 		
 		lstDepartment = new JList<String>(new DefaultListModel<String>());
@@ -361,12 +366,12 @@ public class EmployeeSearchFrame extends JFrame {
 
 		//Make Department scrollable
 		JScrollPane scrollDepartment = new JScrollPane(lstDepartment);
-		scrollDepartment.setBounds(36, 84, 172, 40);
+		scrollDepartment.setBounds(40, 78, 230, 90);
 		contentPane.add(scrollDepartment);
 
 		JLabel lblEmployee = new JLabel("Employee");
 		lblEmployee.setFont(new Font("Times New Roman", Font.BOLD, 12));
-		lblEmployee.setBounds(52, 179, 89, 14);
+		lblEmployee.setBounds(50, 210, 120, 14);
 		contentPane.add(lblEmployee);
 		
 		JButton btnSearch = new JButton("Search");
@@ -375,7 +380,7 @@ public class EmployeeSearchFrame extends JFrame {
 				searchEmployees(chckbxNotDept.isSelected(), chckbxNotProject.isSelected());
 			}
 		});
-		btnSearch.setBounds(80, 276, 89, 23);
+		btnSearch.setBounds(130, 372, 100, 26);
 		contentPane.add(btnSearch);
 		
 		JButton btnClear = new JButton("Clear");
@@ -384,7 +389,7 @@ public class EmployeeSearchFrame extends JFrame {
 				clearResults();
 			}
 		});
-		btnClear.setBounds(236, 276, 89, 23);
+		btnClear.setBounds(340, 372, 100, 26);
 		contentPane.add(btnClear);
 		
 		textAreaEmployee = new JTextArea();
@@ -393,7 +398,7 @@ public class EmployeeSearchFrame extends JFrame {
 
 		//Make Employee scrollable
 		JScrollPane scrollEmployee = new JScrollPane(textAreaEmployee);
-		scrollEmployee.setBounds(36, 197, 339, 68);
+		scrollEmployee.setBounds(40, 228, 490, 132);
 		contentPane.add(scrollEmployee);
 	}
 }
