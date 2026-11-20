@@ -5,6 +5,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Map;
 import java.util.Objects;
 
 /** Searches a COMPANY-schema database using the names displayed in the lists. */
@@ -25,13 +26,15 @@ public final class EmployeeSearch {
         Objects.requireNonNull(departments, "Department selections are required.");
         Objects.requireNonNull(projects, "Project selections are required.");
 
-        StringBuilder sql = new StringBuilder(
-                "SELECT e.Fname, e.Minit, e.Lname FROM EMPLOYEE e WHERE 1 = 1");
+        Map<String, String> tables = DatabaseConnection.companyTables(connection);
+        StringBuilder sql = new StringBuilder("SELECT e.Fname, e.Minit, e.Lname FROM ")
+                .append(tables.get("EMPLOYEE")).append(" e WHERE 1 = 1");
         List<String> parameters = new ArrayList<String>();
 
         if (!departments.isEmpty()) {
             sql.append(notDepartments ? " AND NOT EXISTS (" : " AND EXISTS (");
-            sql.append("SELECT 1 FROM department d WHERE d.Dnumber = e.Dno")
+            sql.append("SELECT 1 FROM ").append(tables.get("DEPARTMENT"))
+                    .append(" d WHERE d.Dnumber = e.Dno")
                     .append(" AND d.Dname IN (")
                     .append(placeholders(departments.size())).append("))");
             parameters.addAll(departments);
@@ -41,8 +44,9 @@ public final class EmployeeSearch {
             // Correlate the whole set of assignments with the employee. Testing
             // individual nonmatching WORKS_ON rows would make Project Not wrong.
             sql.append(notProjects ? " AND NOT EXISTS (" : " AND EXISTS (");
-            sql.append("SELECT 1 FROM WORKS_ON w")
-                    .append(" JOIN PROJECT p ON p.Pnumber = w.Pno")
+            sql.append("SELECT 1 FROM ").append(tables.get("WORKS_ON")).append(" w")
+                    .append(" JOIN ").append(tables.get("PROJECT"))
+                    .append(" p ON p.Pnumber = w.Pno")
                     .append(" WHERE w.Essn = e.Ssn AND p.Pname IN (")
                     .append(placeholders(projects.size())).append("))");
             parameters.addAll(projects);

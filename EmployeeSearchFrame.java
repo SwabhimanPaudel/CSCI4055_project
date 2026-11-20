@@ -6,8 +6,12 @@
 
 import java.awt.EventQueue;
 import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import javax.swing.JFrame;
 import javax.swing.JPanel;
@@ -36,6 +40,8 @@ public class EmployeeSearchFrame extends JFrame {
 	private JList<String> lstProject;
 	private DefaultListModel<String> project = new DefaultListModel<String>();
 	private JTextArea textAreaEmployee;
+	private JCheckBox chckbxNotDept;
+	private JCheckBox chckbxNotProject;
 	private Connection searchConnection;
 
 	/**
@@ -44,6 +50,90 @@ public class EmployeeSearchFrame extends JFrame {
 	 */
 	public void setSearchConnection(Connection connection) {
 		searchConnection = connection;
+	}
+
+	private void clearResults() {
+		textAreaEmployee.setText("");
+		lstDepartment.clearSelection();
+		lstProject.clearSelection();
+		chckbxNotDept.setSelected(false);
+		chckbxNotProject.setSelected(false);
+	}
+
+	private void closeDatabase() throws SQLException {
+		Connection previous = searchConnection;
+		setSearchConnection(null);
+		if (previous != null) {
+			previous.close();
+		}
+	}
+
+	@Override
+	public void dispose() {
+		try {
+			closeDatabase();
+		} catch (SQLException error) {
+			System.err.println("Could not close the database connection.");
+		} finally {
+			super.dispose();
+		}
+	}
+
+	private List<String> loadNames(Connection connection, String sql, String column)
+			throws SQLException {
+		List<String> names = new ArrayList<String>();
+		try (PreparedStatement statement = connection.prepareStatement(sql)) {
+			statement.setQueryTimeout(10);
+			try (ResultSet results = statement.executeQuery()) {
+				while (results.next()) {
+					names.add(results.getString(column));
+				}
+			}
+		}
+		return names;
+	}
+
+	private void fillDatabase() {
+		clearResults();
+		department.clear();
+		project.clear();
+		Connection pending = null;
+		try {
+			closeDatabase();
+			String databaseName = txtDatabase.getText().trim();
+			if (databaseName.isEmpty()) {
+				JOptionPane.showMessageDialog(this, "Please enter a database name.",
+						"Missing Database", JOptionPane.ERROR_MESSAGE);
+				return;
+			}
+			pending = DatabaseConnection.getConnection(databaseName);
+			Map<String, String> tables = DatabaseConnection.companyTables(pending);
+			List<String> departments = loadNames(pending,
+					"SELECT Dname FROM " + tables.get("DEPARTMENT") + " ORDER BY Dnumber", "Dname");
+			List<String> projects = loadNames(pending,
+					"SELECT Pname FROM " + tables.get("PROJECT") + " ORDER BY Pnumber", "Pname");
+			for (String name : departments) {
+				department.addElement(name);
+			}
+			for (String name : projects) {
+				project.addElement(name);
+			}
+			setSearchConnection(pending);
+			pending = null; // The frame now owns this connection until refill/close.
+			JOptionPane.showMessageDialog(this, "Departments and projects loaded successfully!");
+		} catch (SQLException error) {
+			JOptionPane.showMessageDialog(this,
+					"Database could not be opened:\n" + error.getMessage(),
+					"Database Error", JOptionPane.ERROR_MESSAGE);
+		} finally {
+			if (pending != null) {
+				try {
+					pending.close();
+				} catch (SQLException error) {
+					System.err.println("Could not close the failed database connection.");
+				}
+			}
+		}
 	}
 
 	private void searchEmployees(boolean notDepartments, boolean notProjects) {
@@ -88,7 +178,7 @@ public class EmployeeSearchFrame extends JFrame {
 	 */
 	public EmployeeSearchFrame() {
 		setTitle("Employee Search");
-		setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
+		setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
 		setBounds(100, 100, 450, 347);
 		contentPane = new JPanel();
 		contentPane.setBorder(new EmptyBorder(5, 5, 5, 5));
@@ -105,6 +195,7 @@ public class EmployeeSearchFrame extends JFrame {
 		txtDatabase.setBounds(90, 20, 193, 20);
 		contentPane.add(txtDatabase);
 		txtDatabase.setColumns(10);
+		lblNewLabel.setLabelFor(txtDatabase);
 		
 		JButton btnDBFill = new JButton("Fill");
 		/**
@@ -113,15 +204,7 @@ public class EmployeeSearchFrame extends JFrame {
 		 */
 		btnDBFill.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				String[] dept = {"Headquarters", "Reorganization", "Accounting", "HR"};
-				for(int i = 0; i < dept.length; i++) {
-					department.addElement(dept[i]);
-				}
-				String[] prj = {"ProdoctX", "ProductY", "ProductZ"};
-				for(int j = 0; j < prj.length; j++) {
-					project.addElement(prj[j]);
-				}
-				
+				fillDatabase();
 			}
 		});
 		
@@ -142,8 +225,7 @@ public class EmployeeSearchFrame extends JFrame {
 		lstProject = new JList<String>(new DefaultListModel<String>());
 		lstProject.setFont(new Font("Tahoma", Font.PLAIN, 12));
 		lstProject.setModel(project);
-		lstProject.setBounds(225, 84, 150, 42);
-		contentPane.add(lstProject);
+		lblProject.setLabelFor(lstProject);
 
 		//Select multiple projects
 		lstProject.setSelectionMode(
@@ -154,17 +236,18 @@ public class EmployeeSearchFrame extends JFrame {
 		scrollProject.setBounds(225, 84, 150, 42);
 		contentPane.add(scrollProject);
 		
-		JCheckBox chckbxNotDept = new JCheckBox("Not");
+		chckbxNotDept = new JCheckBox("Not");
+		chckbxNotDept.getAccessibleContext().setAccessibleName("Not in selected departments");
 		chckbxNotDept.setBounds(71, 133, 59, 23);
 		contentPane.add(chckbxNotDept);
 		
-		JCheckBox chckbxNotProject = new JCheckBox("Not");
+		chckbxNotProject = new JCheckBox("Not");
+		chckbxNotProject.getAccessibleContext().setAccessibleName("Not on selected projects");
 		chckbxNotProject.setBounds(270, 133, 59, 23);
 		contentPane.add(chckbxNotProject);
 		
 		lstDepartment = new JList<String>(new DefaultListModel<String>());
-		lstDepartment.setBounds(36, 84, 172, 40);
-		contentPane.add(lstDepartment);
+		lblDepartment.setLabelFor(lstDepartment);
 		lstDepartment.setFont(new Font("Tahoma", Font.PLAIN, 12));
 		lstDepartment.setModel(department);
 		
@@ -194,23 +277,15 @@ public class EmployeeSearchFrame extends JFrame {
 		JButton btnClear = new JButton("Clear");
 		btnClear.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent e) {
-				 // Clear employee results
-				textAreaEmployee.setText("");
-				// Clear Department selection
-				lstDepartment.clearSelection();
-				// Clear Project selection
-				lstProject.clearSelection();
-				// Turn off Not checkboxes
-				chckbxNotDept.setSelected(false);
-				chckbxNotProject.setSelected(false);
+				clearResults();
 			}
 		});
 		btnClear.setBounds(236, 276, 89, 23);
 		contentPane.add(btnClear);
 		
 		textAreaEmployee = new JTextArea();
-		textAreaEmployee.setBounds(36, 197, 339, 68);
-		contentPane.add(textAreaEmployee);
+		textAreaEmployee.setEditable(false);
+		lblEmployee.setLabelFor(textAreaEmployee);
 
 		//Make Employee scrollable
 		JScrollPane scrollEmployee = new JScrollPane(textAreaEmployee);
