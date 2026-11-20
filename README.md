@@ -28,7 +28,10 @@ departments and/or projects.
 3. Select `COMPANY`, open the **Import** tab, choose `buildCOMPANYdb.sql`, and click
    **Import**.
 
-Or from a terminal (add `-P 3307` etc. if XAMPP uses a different port):
+Or from a terminal. On macOS, XAMPP's client is
+`/Applications/XAMPP/xamppfiles/bin/mysql`; on Windows it is `C:\xampp\mysql\bin\mysql`.
+Press Enter at the password prompt if root has no password. If XAMPP uses a port
+other than 3306, add `-h 127.0.0.1 -P <port>` to both commands.
 
 ```bash
 mysql -u root -p -e "CREATE DATABASE COMPANY"
@@ -46,6 +49,11 @@ select this folder, then run `EmployeeSearchFrame`. The `.classpath` file alread
 adds `lib/mariadb-java-client-3.5.11.jar` to the build path. If you set the project
 up by hand instead, add that jar under *Project → Properties → Java Build Path →
 Libraries → Add JARs*.
+
+**VS Code:** install the *Extension Pack for Java* (Microsoft), open this folder
+with *File → Open Folder*, wait for the Java project to load, then open
+`EmployeeSearchFrame.java` and click **Run** above `main`. VS Code reads the same
+`.classpath`, so the driver jar is included automatically.
 
 **Mac/Linux terminal:**
 
@@ -98,7 +106,7 @@ Project **Not** ticked returns Ramesh K Narayan and Franklin T Wong.
 
 ## Tools used
 
-- **Eclipse IDE with WindowBuilder:** the window started from Dr. Smith's
+- **Eclipse IDE with WindowBuilder** (VS Code also used for editing): the window started from Dr. Smith's
   WindowBuilder template (absolute layout). We added the scroll panes, the Not
   checkboxes' behavior, and a **Settings** button for the database login. The
   Settings button is not in the assignment mockup: we added it so the program
