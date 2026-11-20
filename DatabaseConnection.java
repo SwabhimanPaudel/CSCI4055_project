@@ -1,9 +1,3 @@
-import java.io.IOException;
-import java.io.Reader;
-import java.nio.charset.StandardCharsets;
-import java.nio.file.Files;
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.DriverManager;
@@ -20,9 +14,14 @@ public final class DatabaseConnection {
     private DatabaseConnection() {
     }
 
-    public static Connection getConnection(String databaseName)
-            throws SQLException {
-        return getConnection(databaseName, getSettings());
+    /** XAMPP defaults; the Settings dialog in the window can change them. */
+    public static Properties defaultSettings() {
+        Properties profile = new Properties();
+        profile.setProperty("DB_HOST", "localhost");
+        profile.setProperty("DB_PORT", "3306");
+        profile.setProperty("DB_USER", "root");
+        profile.setProperty("DB_PASSWORD", "");
+        return profile;
     }
 
     public static Connection getConnection(String databaseName, Properties profile)
@@ -33,62 +32,16 @@ public final class DatabaseConnection {
             throw new SQLException("Use letters, numbers, and underscores for the database name.");
         }
 
-        String port = profile.getProperty("DB_PORT", "3306");
-        try {
-            int number = Integer.parseInt(port);
-            if (number < 1 || number > 65535) {
-                throw new NumberFormatException();
-            }
-        } catch (NumberFormatException error) {
-            throw new SQLException("DB_PORT must be a number between 1 and 65535.");
-        }
         String url = "jdbc:mariadb://" + profile.getProperty("DB_HOST", "localhost")
-                + ":" + port + "/" + databaseName;
+                + ":" + profile.getProperty("DB_PORT", "3306") + "/" + databaseName;
         try {
             DriverManager.getDriver(url);
         } catch (SQLException error) {
-            throw new SQLException("The JDBC driver is missing. Start the app with run.sh or run.bat.",
+            throw new SQLException("The JDBC driver is missing. Add lib/mariadb-java-client-3.5.11.jar to the classpath.",
                     "IM002", error);
         }
-        Properties settings = new Properties();
-        settings.setProperty("user", profile.getProperty("DB_USER", "root"));
-        settings.setProperty("password", profile.getProperty("DB_PASSWORD", ""));
-        settings.setProperty("connectTimeout", "5000");
-        settings.setProperty("socketTimeout", "15000");
-        String sslMode = profile.getProperty("DB_SSL_MODE", "");
-        if (!sslMode.isEmpty()) {
-            settings.setProperty("sslMode", sslMode);
-        }
-        return DriverManager.getConnection(url, settings);
-    }
-
-    public static Properties getSettings() throws SQLException {
-        Properties local = readSettings();
-        Properties profile = new Properties();
-        profile.setProperty("DB_HOST", setting(local, "DB_HOST", "localhost"));
-        profile.setProperty("DB_PORT", setting(local, "DB_PORT", "3306"));
-        profile.setProperty("DB_USER", setting(local, "DB_USER", "root"));
-        profile.setProperty("DB_PASSWORD", setting(local, "DB_PASSWORD", ""));
-        profile.setProperty("DB_SSL_MODE", setting(local, "DB_SSL_MODE", ""));
-        return profile;
-    }
-
-    private static Properties readSettings() throws SQLException {
-        Properties local = new Properties();
-        Path file = Paths.get("database.properties");
-        if (Files.exists(file)) {
-            try (Reader reader = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
-                local.load(reader);
-            } catch (IOException | IllegalArgumentException error) {
-                throw new SQLException("Could not read database.properties.", error);
-            }
-        }
-        return local;
-    }
-
-    private static String setting(Properties local, String name, String fallback) {
-        String value = System.getenv(name);
-        return value == null ? local.getProperty(name, fallback) : value;
+        return DriverManager.getConnection(url,
+                profile.getProperty("DB_USER", "root"), profile.getProperty("DB_PASSWORD", ""));
     }
 
     /** Check the COMPANY schema and handle differences in table capitalization. */

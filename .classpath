@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <classpath>
-	<classpathentry kind="src" path="" excluding="bin/|build/|lib/|tests/"/>
+	<classpathentry kind="src" path="" excluding="bin/|build/|lib/"/>
 	<classpathentry kind="con" path="org.eclipse.jdt.launching.JRE_CONTAINER"/>
 	<classpathentry kind="lib" path="lib/mariadb-java-client-3.5.11.jar"/>
 	<classpathentry kind="output" path="bin"/>

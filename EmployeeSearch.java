@@ -50,7 +50,6 @@ public final class EmployeeSearch {
         sql.append(" ORDER BY e.Lname, e.Fname, e.Ssn");
         List<String> employees = new ArrayList<String>();
         try (PreparedStatement statement = connection.prepareStatement(sql.toString())) {
-            statement.setQueryTimeout(10);
             for (int i = 0; i < parameters.size(); i++) {
                 statement.setString(i + 1, parameters.get(i));
             }

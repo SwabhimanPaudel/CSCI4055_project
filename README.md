@@ -19,7 +19,6 @@ departments and/or projects.
 | `lib/mariadb-java-client-3.5.11.jar` | MariaDB Connector/J JDBC driver |
 | `run.sh` / `run.bat` | Compile and run from the command line |
 | `.project` / `.classpath` | Eclipse project files |
-| `tests/` | Automated search and GUI checks (optional, see below) |
 
 ## 1. Create the database
 
@@ -65,23 +64,11 @@ driver jar is missing, they download it from Maven Central first.
 
 ## 3. Database login settings
 
-The defaults are host `localhost`, port `3306`, user `root`, and an empty password
-(the XAMPP defaults). To use different values, click **Settings** in the window and
-enter your host, port, username, and password, then click **Fill**. The same
-dialog opens automatically if the server cannot be reached or the login is rejected.
-Passwords typed into the dialog are kept only while the window is open and are
-never saved to a file.
-
-To save launch defaults, copy `database.properties.example` to
-`database.properties` and edit it. That file is ignored by Git. Environment
-variables with the same names override the file.
-
-```properties
-DB_HOST=localhost
-DB_PORT=3306
-DB_USER=root
-DB_PASSWORD=
-```
+The program uses the XAMPP defaults: host `localhost`, port `3306`, user `root`,
+and an empty password. If your XAMPP uses a different port or a password, click
+**Settings** (or just click **Fill**: the same dialog opens automatically when the
+login fails), enter your values, and click OK. They are kept until the window is
+closed and are never saved to a file.
 
 ## 4. Using the program
 
@@ -122,14 +109,3 @@ Project **Not** ticked returns Ramesh K Narayan and Franklin T Wong.
 - **Git/GitHub** for version control.
 
 Tested with JDK 17 and XAMPP 8.3.37 (MariaDB 10.11.19) on macOS.
-
-## Automated tests (optional)
-
-`tests/run-search-tests.py` starts a temporary, separate MySQL server with
-made-up data, then runs the search and GUI checks against it. It never touches
-your COMPANY database. It needs a local MySQL server install (`MYSQL_HOME`,
-default `/usr/local/mysql`) and a JDK (`JAVA_HOME`).
-
-```bash
-python3 tests/run-search-tests.py lib/mariadb-java-client-3.5.11.jar
-```

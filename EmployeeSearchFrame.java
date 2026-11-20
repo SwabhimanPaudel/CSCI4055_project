@@ -89,7 +89,6 @@ public class EmployeeSearchFrame extends JFrame {
 			throws SQLException {
 		List<String> names = new ArrayList<String>();
 		try (PreparedStatement statement = connection.prepareStatement(sql)) {
-			statement.setQueryTimeout(10);
 			try (ResultSet results = statement.executeQuery()) {
 				while (results.next()) {
 					names.add(results.getString(column));
@@ -101,7 +100,7 @@ public class EmployeeSearchFrame extends JFrame {
 
 	private Properties currentSettings() throws SQLException {
 		if (connectionSettings == null) {
-			connectionSettings = DatabaseConnection.getSettings();
+			connectionSettings = DatabaseConnection.defaultSettings();
 		}
 		return connectionSettings;
 	}
